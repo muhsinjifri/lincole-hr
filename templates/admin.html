@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% if form_title %}{{ form_title }}{% else %}Submissions{% endif %} · Dashboard</title>
+  <link rel="stylesheet" href="/static/admin.css"/>
+</head>
+<body class="app">
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Jotform · live summary</p>
+      <h1 class="hero-title" id="live-hero-title">{% if form_title %}{{ form_title }}{% else %}Form submissions{% endif %}</h1>
+      <p class="hero-meta">
+        <span class="pill">ID {{ form_id }}</span>
+        <span class="pill pill-accent" id="live-pill-total">{{ submission_count }} response{% if submission_count != 1 %}s{% endif %}</span>
+      </p>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="cards" aria-label="Summary">
+      <article class="card card-total">
+        <h2 class="card-label">Total submissions</h2>
+        <p class="card-value" id="live-stat-total">{{ submission_count }}</p>
+        <p class="card-hint">Synced to Postgres on each load; webhook pushes update this view live.</p>
+      </article>
+
+      <article class="card card-dept" id="dept-card-root" {% if not dept_field %}data-muted{% endif %}>
+        <h2 class="card-label" id="live-dept-label">{% if dept_label %}{{ dept_label }}{% else %}Department{% endif %}</h2>
+        <div id="live-dept-body">
+          {% if dept_field and dept_stats %}
+          <ul class="dept-list" id="live-dept-list" aria-label="Counts by department">
+            {% for name, count in dept_stats %}
+            <li class="dept-row">
+              <div class="dept-top">
+                <span class="dept-name">{{ name }}</span>
+                <span class="dept-count">{{ count }}</span>
+              </div>
+              <div class="bar-track" role="presentation">
+                <div class="bar-fill" style="width: {% if max_dept %}{{ (100 * count / max_dept)|round(1) }}{% else %}0{% endif %}%;"></div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% elif dept_field %}
+          <p class="card-empty">No department values on these rows yet.</p>
+          {% else %}
+          <p class="card-empty">No department column detected. Rename a field to include <strong>Department</strong>, or set <code>JOTFORM_DEPARTMENT_FIELD_ID</code> in <code>.env</code> to the numeric question id.</p>
+          {% endif %}
+        </div>
+      </article>
+    </section>
+
+    <section class="table-section" aria-label="All submissions" id="live-table-section">
+      <div class="table-head">
+        <h2>All responses</h2>
+        <p class="muted">Scroll horizontally on small screens · updates live via webhook</p>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr id="live-thead-row">
+              {% for key, label in headers %}
+              <th>{{ label }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody id="live-tbody">
+            {% if rows %}
+            {% for row in rows %}
+            <tr>
+              {% for key, _ in headers %}
+              <td>{{ row[key] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr class="empty-row">
+              <td class="empty-cell" colspan="{{ headers|length }}">No submissions yet.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="/static/dashboard.js" defer></script>
+</body>
+</html>

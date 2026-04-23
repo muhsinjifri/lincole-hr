@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jotform-admin-db
+    environment:
+      POSTGRES_USER: jotform
+      POSTGRES_PASSWORD: jotform
+      POSTGRES_DB: jotformdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - jotform_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jotform -d jotformdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  jotform_pg_data:

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Jotform admin — error</title>
+  <link rel="stylesheet" href="/static/admin.css"/>
+</head>
+<body class="plain-error">
+  <header class="top">
+    <h1>Could not load form data</h1>
+    <p class="muted">The server could not read your Jotform. Details below.</p>
+  </header>
+  <div class="wrap">
+    <pre class="err">{{ message }}</pre>
+    <p class="muted hints">{{ hints }}</p>
+  </div>
+</body>
+</html>
