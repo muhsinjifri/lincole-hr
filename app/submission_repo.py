@@ -56,6 +56,19 @@ async def upsert_many(session: AsyncSession, form_id: str, payloads: list[dict[s
         await upsert_submission(session, form_id, p)
 
 
+async def get_payload_by_jotform_id(
+    session: AsyncSession, form_id: str, jotform_submission_id: str
+) -> dict[str, Any] | None:
+    sid = str(jotform_submission_id).strip()
+    if not sid:
+        return None
+    q = select(Submission.payload).where(
+        Submission.form_id == form_id,
+        Submission.jotform_submission_id == sid,
+    )
+    return (await session.execute(q)).scalar_one_or_none()
+
+
 async def list_submission_payloads(session: AsyncSession, form_id: str) -> list[dict[str, Any]]:
     q = (
         select(Submission.payload)

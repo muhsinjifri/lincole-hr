@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     jotform_field_ids: str = ""
     # Optional: numeric question id for "Department" if auto-detect by label fails.
     jotform_department_field_id: str = ""
+    # Optional: numeric question id for a file-upload (resume) field — adds a Resume column with view/download links.
+    jotform_resume_field_id: str = ""
+    # Optional: numeric question id for a Short Text (or similar) field used for notes (POST /api/submissions/{id}/notes).
+    jotform_notes_field_id: str = ""
+    # If set, POST /api/submissions/{id}/notes requires Authorization: Bearer ... or ?token=... matching this value.
+    notes_api_secret: str = ""
+    # If true (default), View/Download use this app as a proxy (API key on server) so you need not log into Jotform in the browser.
+    jotform_upload_proxy: bool = True
 
     # Postgres from docker-compose.yml (default matches compose credentials).
     database_url: str = "postgresql+asyncpg://jotform:jotform@127.0.0.1:5432/jotformdb"
@@ -36,6 +44,25 @@ class Settings(BaseSettings):
     def department_field_id(self) -> str | None:
         raw = self.jotform_department_field_id.strip()
         return raw or None
+
+    @property
+    def resume_field_id(self) -> str | None:
+        raw = self.jotform_resume_field_id.strip()
+        return raw or None
+
+    @property
+    def notes_field_id(self) -> str | None:
+        raw = self.jotform_notes_field_id.strip()
+        return raw or None
+
+    @property
+    def notes_api_token(self) -> str | None:
+        raw = self.notes_api_secret.strip()
+        return raw or None
+
+    @property
+    def use_upload_proxy(self) -> bool:
+        return bool(self.jotform_upload_proxy)
 
     @property
     def webhook_token(self) -> str | None:

@@ -52,39 +52,139 @@
       </article>
     </section>
 
-    <section class="table-section" aria-label="All submissions" id="live-table-section">
+    <section class="table-section" aria-label="Form data" id="live-table-section">
       <div class="table-head">
-        <h2>All responses</h2>
-        <p class="muted">Scroll horizontally on small screens · updates live via webhook</p>
+        <div class="table-head-top">
+          <h2 class="table-section-title">Form data</h2>
+          <div class="panel-tabs" role="tablist" aria-label="Dashboard view">
+            <button type="button" class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="panel-responses" id="tab-responses" data-tab="responses">All responses</button>
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-columns" id="tab-columns" data-tab="columns">Form columns</button>
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-sections" id="tab-sections" data-tab="sections">Form sections</button>
+          </div>
+        </div>
+        <p class="muted tab-hint is-active" data-tab-hint="responses">Scroll horizontally on small screens · updates live via webhook</p>
+        <p class="muted tab-hint" data-tab-hint="columns">Every field on the form (same labels as in Jotform) with its numeric question id for <code>JOTFORM_FIELD_IDS</code>, <code>JOTFORM_DEPARTMENT_FIELD_ID</code>, etc.</p>
+        <p class="muted tab-hint" data-tab-hint="sections">Section headings, section collapse titles, and page breaks from the form builder, with Jotform question ids (<code>qid</code>).</p>
       </div>
-      <div class="table-scroll">
-        <table class="data-table">
-          <thead>
-            <tr id="live-thead-row">
-              {% for key, label in headers %}
-              <th>{{ label }}</th>
+      <div id="panel-responses" class="tab-panel is-active" role="tabpanel" aria-labelledby="tab-responses">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr id="live-thead-row">
+                {% for key, label in headers %}
+                <th>{{ label }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody id="live-tbody">
+              {% if rows %}
+              {% for row in rows %}
+              <tr data-submission-id="{{ row['_id']|e }}">
+                {% for key, _ in headers %}
+                <td>
+                  {% if key == '_resume' %}
+                    {% set files = row.get('_resume', []) %}
+                    {% if files %}
+                    <div class="resume-cell">
+                      {% for f in files %}
+                      <div class="resume-file">
+                        <span class="resume-name">{{ f.name }}</span>
+                        <span class="resume-links">
+                          <a class="resume-link" href="{{ f.view_url }}" target="_blank" rel="noopener noreferrer">View</a>
+                          <span class="resume-sep" aria-hidden="true">·</span>
+                          <a class="resume-link" href="{{ f.download_url }}" target="_blank" rel="noopener noreferrer">Download</a>
+                        </span>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                  {% elif key == '_dept_ui' %}
+                    <div class="note-editor">
+                      <input type="text" class="note-input" name="dept-{{ row['_id'] }}" value="{{ row.get('_dept_ui', '')|e }}" autocomplete="off" aria-label="Department"/>
+                      <button type="button" class="dashboard-field-save" data-save-kind="department">Save</button>
+                    </div>
+                  {% elif key == '_note_ui' %}
+                    <div class="note-editor">
+                      <input type="text" class="note-input" name="note-{{ row['_id'] }}" value="{{ row.get('_note_ui', '')|e }}" autocomplete="off" aria-label="Note"/>
+                      <button type="button" class="dashboard-field-save" data-save-kind="note">Save</button>
+                    </div>
+                  {% else %}
+                    {{ row[key] }}
+                  {% endif %}
+                </td>
+                {% endfor %}
+              </tr>
               {% endfor %}
-            </tr>
-          </thead>
-          <tbody id="live-tbody">
-            {% if rows %}
-            {% for row in rows %}
-            <tr>
-              {% for key, _ in headers %}
-              <td>{{ row[key] }}</td>
+              {% else %}
+              <tr class="empty-row">
+                <td class="empty-cell" colspan="{{ headers|length }}">No submissions yet.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="panel-columns" class="tab-panel" role="tabpanel" aria-labelledby="tab-columns">
+        <div class="table-scroll">
+          <table class="data-table section-map-table">
+            <thead>
+              <tr>
+                <th>Field label</th>
+                <th>QID</th>
+                <th>Widget type</th>
+              </tr>
+            </thead>
+            <tbody id="live-columns-tbody">
+              {% if form_columns %}
+              {% for c in form_columns %}
+              <tr>
+                <td>{{ c.name }}</td>
+                <td><code>{{ c.qid }}</code></td>
+                <td>{{ c.kind }}</td>
+              </tr>
               {% endfor %}
-            </tr>
-            {% endfor %}
-            {% else %}
-            <tr class="empty-row">
-              <td class="empty-cell" colspan="{{ headers|length }}">No submissions yet.</td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
+              {% else %}
+              <tr class="empty-row">
+                <td class="empty-cell" colspan="3">No form fields returned from Jotform.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="panel-sections" class="tab-panel" role="tabpanel" aria-labelledby="tab-sections">
+        <div class="table-scroll">
+          <table class="data-table section-map-table">
+            <thead>
+              <tr>
+                <th>Section name</th>
+                <th>QID</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="live-section-tbody">
+              {% if form_sections %}
+              {% for s in form_sections %}
+              <tr>
+                <td>{{ s.name }}</td>
+                <td><code>{{ s.qid }}</code></td>
+                <td>{{ s.kind }}</td>
+              </tr>
+              {% endfor %}
+              {% else %}
+              <tr class="empty-row">
+                <td class="empty-cell" colspan="3">No section widgets found. Add a <strong>Heading</strong>, <strong>Section Collapse</strong>, or <strong>Page Break</strong> in Jotform to list them here.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
+  <script>window.__NOTE_POST__ = {{ note_post_client | tojson }};</script>
   <script src="/static/dashboard.js" defer></script>
 </body>
 </html>
