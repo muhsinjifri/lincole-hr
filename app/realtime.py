@@ -1,3 +1,5 @@
+# DEAD MODULE: SSE stream is unused now that the dashboard renders server-side on each page load.
+# Re-include the router in main.py if live updates come back.
 from __future__ import annotations
 
 import json

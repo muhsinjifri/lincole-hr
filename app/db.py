@@ -1,3 +1,5 @@
+# DEAD MODULE: not imported anywhere after main.py switched to a pure Jotform-API flow.
+# Kept on disk for reference. Re-wire via app/main.py lifespan + routes to restore.
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator

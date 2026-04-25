@@ -1,3 +1,4 @@
+# DEAD MODULE: in-process pub/sub for the SSE stream — orphaned while realtime.py and webhooks.py are dead.
 from __future__ import annotations
 
 import asyncio

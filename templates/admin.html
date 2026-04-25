@@ -3,188 +3,143 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>{% if form_title %}{{ form_title }}{% else %}Submissions{% endif %} · Dashboard</title>
+  <title>{% if forms|length == 1 and forms[0].form_title %}{{ forms[0].form_title }}{% else %}Submissions{% endif %} · Dashboard</title>
   <link rel="stylesheet" href="/static/admin.css"/>
 </head>
 <body class="app">
   <header class="hero">
     <div class="hero-inner">
-      <p class="eyebrow">Jotform · live summary</p>
-      <h1 class="hero-title" id="live-hero-title">{% if form_title %}{{ form_title }}{% else %}Form submissions{% endif %}</h1>
+      <p class="eyebrow">Jotform · live view</p>
+      <h1 class="hero-title">
+        {% if forms|length == 1 and forms[0].form_title %}{{ forms[0].form_title }}
+        {% elif forms|length > 1 %}Forms dashboard
+        {% else %}Form submissions{% endif %}
+      </h1>
       <p class="hero-meta">
-        <span class="pill">ID {{ form_id }}</span>
-        <span class="pill pill-accent" id="live-pill-total">{{ submission_count }} response{% if submission_count != 1 %}s{% endif %}</span>
+        <span class="pill">{{ forms|length }} form{% if forms|length != 1 %}s{% endif %}</span>
       </p>
     </div>
   </header>
 
   <main class="main">
-    <section class="cards" aria-label="Summary">
-      <article class="card card-total">
-        <h2 class="card-label">Total submissions</h2>
-        <p class="card-value" id="live-stat-total">{{ submission_count }}</p>
-        <p class="card-hint">Synced to Postgres on each load; webhook pushes update this view live.</p>
-      </article>
+    {% for form in forms %}
+    <section class="panel" aria-labelledby="form-{{ form.form_id }}-title">
+      <div class="panel-head">
+        <h2 class="panel-title" id="form-{{ form.form_id }}-title">
+          {% if form.form_title %}{{ form.form_title }}{% else %}Form {{ form.form_id }}{% endif %}
+        </h2>
+        <p class="hero-meta">
+          <span class="pill">Form ID {{ form.form_id }}</span>
+          <span class="pill pill-accent">{{ form.submission_count }} submission{% if form.submission_count != 1 %}s{% endif %}</span>
+          <span class="pill pill-muted">{{ form.columns|length }} field{% if form.columns|length != 1 %}s{% endif %}</span>
+        </p>
+      </div>
+    </section>
 
-      <article class="card card-dept" id="dept-card-root" {% if not dept_field %}data-muted{% endif %}>
-        <h2 class="card-label" id="live-dept-label">{% if dept_label %}{{ dept_label }}{% else %}Department{% endif %}</h2>
-        <div id="live-dept-body">
-          {% if dept_field and dept_stats %}
-          <ul class="dept-list" id="live-dept-list" aria-label="Counts by department">
-            {% for name, count in dept_stats %}
-            <li class="dept-row">
-              <div class="dept-top">
-                <span class="dept-name">{{ name }}</span>
-                <span class="dept-count">{{ count }}</span>
-              </div>
-              <div class="bar-track" role="presentation">
-                <div class="bar-fill" style="width: {% if max_dept %}{{ (100 * count / max_dept)|round(1) }}{% else %}0{% endif %}%;"></div>
-              </div>
-            </li>
+    <section class="panel" aria-labelledby="columns-title-{{ form.form_id }}">
+      <div class="panel-head">
+        <h2 class="panel-title" id="columns-title-{{ form.form_id }}">Form columns</h2>
+        <p class="panel-hint">
+          Every field on the form, in builder order. The <strong>QID</strong> is the numeric Jotform question id —
+          use it in <code>.env</code> settings like <code>JOTFORM_FIELD_IDS</code>, <code>JOTFORM_DEPARTMENT_FIELD_ID</code>,
+          or <code>JOTFORM_NOTES_FIELD_ID</code>, and when calling the Jotform API directly.
+        </p>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table columns-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th>Field label</th>
+              <th>QID</th>
+              <th>Widget type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if form.columns %}
+            {% for c in form.columns %}
+            <tr>
+              <td class="col-num">{{ loop.index }}</td>
+              <td class="col-label">{{ c.name }}</td>
+              <td><code class="qid-code">{{ c.qid }}</code></td>
+              <td><span class="kind-badge">{{ c.kind }}</span></td>
+            </tr>
             {% endfor %}
-          </ul>
-          {% elif dept_field %}
-          <p class="card-empty">No department values on these rows yet.</p>
-          {% else %}
-          <p class="card-empty">No department column detected. Rename a field to include <strong>Department</strong>, or set <code>JOTFORM_DEPARTMENT_FIELD_ID</code> in <code>.env</code> to the numeric question id.</p>
-          {% endif %}
-        </div>
-      </article>
+            {% else %}
+            <tr class="empty-row">
+              <td class="empty-cell" colspan="4">No form fields returned from Jotform.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="table-section" aria-label="Form data" id="live-table-section">
-      <div class="table-head">
-        <div class="table-head-top">
-          <h2 class="table-section-title">Form data</h2>
-          <div class="panel-tabs" role="tablist" aria-label="Dashboard view">
-            <button type="button" class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="panel-responses" id="tab-responses" data-tab="responses">All responses</button>
-            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-columns" id="tab-columns" data-tab="columns">Form columns</button>
-            <button type="button" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-sections" id="tab-sections" data-tab="sections">Form sections</button>
-          </div>
-        </div>
-        <p class="muted tab-hint is-active" data-tab-hint="responses">Scroll horizontally on small screens · updates live via webhook</p>
-        <p class="muted tab-hint" data-tab-hint="columns">Every field on the form (same labels as in Jotform) with its numeric question id for <code>JOTFORM_FIELD_IDS</code>, <code>JOTFORM_DEPARTMENT_FIELD_ID</code>, etc.</p>
-        <p class="muted tab-hint" data-tab-hint="sections">Section headings, section collapse titles, and page breaks from the form builder, with Jotform question ids (<code>qid</code>).</p>
+    <section class="panel panel-wide" aria-labelledby="submissions-title-{{ form.form_id }}">
+      <div class="panel-head">
+        <h2 class="panel-title" id="submissions-title-{{ form.form_id }}">Submissions</h2>
+        <p class="panel-hint">
+          One row per Jotform submission, in form-builder column order. Layout widgets (headings, page breaks)
+          are skipped. Scroll horizontally to see all fields. File uploads open through this app's proxy so the
+          API key stays server-side.
+        </p>
       </div>
-      <div id="panel-responses" class="tab-panel is-active" role="tabpanel" aria-labelledby="tab-responses">
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr id="live-thead-row">
-                {% for key, label in headers %}
-                <th>{{ label }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody id="live-tbody">
-              {% if rows %}
-              {% for row in rows %}
-              <tr data-submission-id="{{ row['_id']|e }}">
-                {% for key, _ in headers %}
-                <td>
-                  {% if key == '_resume' %}
-                    {% set files = row.get('_resume', []) %}
-                    {% if files %}
-                    <div class="resume-cell">
-                      {% for f in files %}
-                      <div class="resume-file">
-                        <span class="resume-name">{{ f.name }}</span>
-                        <span class="resume-links">
-                          <a class="resume-link" href="{{ f.view_url }}" target="_blank" rel="noopener noreferrer">View</a>
-                          <span class="resume-sep" aria-hidden="true">·</span>
-                          <a class="resume-link" href="{{ f.download_url }}" target="_blank" rel="noopener noreferrer">Download</a>
-                        </span>
-                      </div>
-                      {% endfor %}
-                    </div>
-                    {% else %}
-                    <span class="muted">—</span>
-                    {% endif %}
-                  {% elif key == '_dept_ui' %}
-                    <div class="note-editor">
-                      <input type="text" class="note-input" name="dept-{{ row['_id'] }}" value="{{ row.get('_dept_ui', '')|e }}" autocomplete="off" aria-label="Department"/>
-                      <button type="button" class="dashboard-field-save" data-save-kind="department">Save</button>
-                    </div>
-                  {% elif key == '_note_ui' %}
-                    <div class="note-editor">
-                      <input type="text" class="note-input" name="note-{{ row['_id'] }}" value="{{ row.get('_note_ui', '')|e }}" autocomplete="off" aria-label="Note"/>
-                      <button type="button" class="dashboard-field-save" data-save-kind="note">Save</button>
-                    </div>
-                  {% else %}
-                    {{ row[key] }}
-                  {% endif %}
-                </td>
-                {% endfor %}
-              </tr>
+      <div class="table-scroll table-scroll-tall">
+        <table class="data-table submissions-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-subid">Submission ID</th>
+              <th class="col-when">Submitted</th>
+              {% for h in form.submission_headers %}
+              <th>
+                <span class="th-label">{{ h.label }}</span>
+                <span class="th-meta"><code class="qid-code qid-inline">{{ h.qid }}</code></span>
+              </th>
               {% endfor %}
-              {% else %}
-              <tr class="empty-row">
-                <td class="empty-cell" colspan="{{ headers|length }}">No submissions yet.</td>
-              </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div id="panel-columns" class="tab-panel" role="tabpanel" aria-labelledby="tab-columns">
-        <div class="table-scroll">
-          <table class="data-table section-map-table">
-            <thead>
-              <tr>
-                <th>Field label</th>
-                <th>QID</th>
-                <th>Widget type</th>
-              </tr>
-            </thead>
-            <tbody id="live-columns-tbody">
-              {% if form_columns %}
-              {% for c in form_columns %}
-              <tr>
-                <td>{{ c.name }}</td>
-                <td><code>{{ c.qid }}</code></td>
-                <td>{{ c.kind }}</td>
-              </tr>
+            </tr>
+          </thead>
+          <tbody>
+            {% if form.submission_rows %}
+            {% for row in form.submission_rows %}
+            <tr>
+              <td class="col-num">{{ loop.index }}</td>
+              <td class="col-subid"><code class="qid-code">{{ row.id }}</code></td>
+              <td class="col-when">{% if row.created_at %}{{ row.created_at }}{% else %}—{% endif %}</td>
+              {% for cell in row.cells %}
+              <td>
+                {% if cell.files %}
+                <ul class="file-list">
+                  {% for file in cell.files %}
+                  <li class="file-item">
+                    <span class="file-name">{{ file.name }}</span>
+                    <span class="file-actions">
+                      <a class="file-link" href="{{ file.view_url }}" target="_blank" rel="noopener noreferrer">View</a>
+                      <span class="file-sep" aria-hidden="true">·</span>
+                      <a class="file-link" href="{{ file.download_url }}" target="_blank" rel="noopener noreferrer">Download</a>
+                    </span>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% elif cell.value %}
+                <span class="value-text">{{ cell.value }}</span>
+                {% else %}
+                <span class="cell-empty">—</span>
+                {% endif %}
+              </td>
               {% endfor %}
-              {% else %}
-              <tr class="empty-row">
-                <td class="empty-cell" colspan="3">No form fields returned from Jotform.</td>
-              </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div id="panel-sections" class="tab-panel" role="tabpanel" aria-labelledby="tab-sections">
-        <div class="table-scroll">
-          <table class="data-table section-map-table">
-            <thead>
-              <tr>
-                <th>Section name</th>
-                <th>QID</th>
-                <th>Type</th>
-              </tr>
-            </thead>
-            <tbody id="live-section-tbody">
-              {% if form_sections %}
-              {% for s in form_sections %}
-              <tr>
-                <td>{{ s.name }}</td>
-                <td><code>{{ s.qid }}</code></td>
-                <td>{{ s.kind }}</td>
-              </tr>
-              {% endfor %}
-              {% else %}
-              <tr class="empty-row">
-                <td class="empty-cell" colspan="3">No section widgets found. Add a <strong>Heading</strong>, <strong>Section Collapse</strong>, or <strong>Page Break</strong> in Jotform to list them here.</td>
-              </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr class="empty-row">
+              <td class="empty-cell" colspan="{{ form.submission_headers|length + 3 }}">No submissions yet for this form.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
       </div>
     </section>
+    {% endfor %}
   </main>
-  <script>window.__NOTE_POST__ = {{ note_post_client | tojson }};</script>
-  <script src="/static/dashboard.js" defer></script>
 </body>
 </html>

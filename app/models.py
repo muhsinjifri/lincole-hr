@@ -1,3 +1,4 @@
+# DEAD MODULE: SQLAlchemy model — unused while the app runs without a database.
 from __future__ import annotations
 
 from datetime import datetime

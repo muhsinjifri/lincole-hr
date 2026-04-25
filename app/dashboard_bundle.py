@@ -1,3 +1,4 @@
+# DEAD MODULE: bundled Jotform fetch + Postgres mirror — replaced by _load_form_data in main.py.
 from __future__ import annotations
 
 import asyncio

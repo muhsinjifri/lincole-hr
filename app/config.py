@@ -8,6 +8,8 @@ class Settings(BaseSettings):
 
     jotform_api_key: str
     jotform_form_id: str
+    # Optional: a second form to display alongside the first on the dashboard.
+    jotform_form_id_2: str = ""
     # US: https://api.jotform.com/v1 — EU/GDPR accounts often need https://eu-api.jotform.com/v1
     jotform_api_base: str = "https://api.jotform.com/v1"
     # Comma-separated question ids, e.g. "5,12,37". Empty = show all fields present on submissions.
@@ -63,6 +65,15 @@ class Settings(BaseSettings):
     @property
     def use_upload_proxy(self) -> bool:
         return bool(self.jotform_upload_proxy)
+
+    @property
+    def form_ids(self) -> list[str]:
+        out: list[str] = []
+        for raw in (self.jotform_form_id, self.jotform_form_id_2):
+            v = (raw or "").strip()
+            if v and v not in out:
+                out.append(v)
+        return out
 
     @property
     def webhook_token(self) -> str | None:

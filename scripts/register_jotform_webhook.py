@@ -1,3 +1,4 @@
+# DEAD SCRIPT: registers a Jotform webhook at /webhooks/jotform — the webhook route is dead right now.
 from __future__ import annotations
 
 import asyncio

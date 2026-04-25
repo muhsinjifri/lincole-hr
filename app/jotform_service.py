@@ -240,8 +240,11 @@ def format_answer_display(answer_blob: Any) -> str:
     return str(val).strip()
 
 
-async def fetch_form_questions(client: httpx.AsyncClient, settings: Settings) -> dict[str, dict[str, Any]]:
-    url = f"{settings.api_base}/form/{settings.jotform_form_id}/questions"
+async def fetch_form_questions(
+    client: httpx.AsyncClient, settings: Settings, form_id: str | None = None
+) -> dict[str, dict[str, Any]]:
+    fid = (form_id or settings.jotform_form_id).strip()
+    url = f"{settings.api_base}/form/{fid}/questions"
     r = await client.get(url, params={"apiKey": settings.jotform_api_key})
     r.raise_for_status()
     data = r.json()
@@ -250,12 +253,15 @@ async def fetch_form_questions(client: httpx.AsyncClient, settings: Settings) ->
     return data.get("content") or {}
 
 
-async def fetch_all_submissions(client: httpx.AsyncClient, settings: Settings) -> list[dict[str, Any]]:
+async def fetch_all_submissions(
+    client: httpx.AsyncClient, settings: Settings, form_id: str | None = None
+) -> list[dict[str, Any]]:
+    fid = (form_id or settings.jotform_form_id).strip()
     out: list[dict[str, Any]] = []
     offset = 0
     limit = 1000
     while True:
-        url = f"{settings.api_base}/form/{settings.jotform_form_id}/submissions"
+        url = f"{settings.api_base}/form/{fid}/submissions"
         r = await client.get(
             url,
             params={"apiKey": settings.jotform_api_key, "limit": limit, "offset": offset},
@@ -467,8 +473,11 @@ async def update_submission_answer(
         raise RuntimeError(data.get("message") or "Jotform rejected submission update")
 
 
-async def fetch_form_title(client: httpx.AsyncClient, settings: Settings) -> str | None:
-    url = f"{settings.api_base}/form/{settings.jotform_form_id}"
+async def fetch_form_title(
+    client: httpx.AsyncClient, settings: Settings, form_id: str | None = None
+) -> str | None:
+    fid = (form_id or settings.jotform_form_id).strip()
+    url = f"{settings.api_base}/form/{fid}"
     r = await client.get(url, params={"apiKey": settings.jotform_api_key})
     r.raise_for_status()
     data = r.json()

@@ -1,3 +1,4 @@
+# DEAD SCRIPT: Postgres smoke test — unused while the app runs without a database.
 import asyncio
 import os
 

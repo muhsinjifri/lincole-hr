@@ -1,3 +1,4 @@
+# DEAD MODULE: department-field detection / breakdown — not wired up in the simplified dashboard.
 from __future__ import annotations
 
 from collections import Counter

@@ -1,3 +1,4 @@
+# DEAD MODULE: Postgres CRUD for cached submissions — unused while main.py reads straight from Jotform.
 from __future__ import annotations
 
 from datetime import datetime, timezone

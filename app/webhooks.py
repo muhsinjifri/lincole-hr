@@ -1,3 +1,5 @@
+# DEAD MODULE: webhook ingestion is off while the app runs DB-less.
+# Re-register this router in main.py when Postgres + event bus come back.
 from __future__ import annotations
 
 import httpx
